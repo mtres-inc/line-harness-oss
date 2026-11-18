@@ -748,6 +748,35 @@ const spec = {
         },
       },
     },
+    '/api/line-accounts/{id}/webhook-forward': {
+      get: {
+        tags: ['LINE Accounts'],
+        summary: 'Webhook のそのまま転送先の確認 (owner/admin)',
+        description:
+          '署名検証を通った Webhook を、受け取ったバイト列と LINE の X-Line-Signature のまま転送する先の URL を返す。未設定は null。',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { '200': { description: '{ url: string | null }' }, '404': { description: 'LINE account not found' } },
+      },
+      put: {
+        tags: ['LINE Accounts'],
+        summary: 'Webhook のそのまま転送先を設定・解除 (owner/admin)',
+        description:
+          'url を設定すると、このアカウントの署名検証を通った Webhook を 200 応答のあとに 1 回だけ転送する (再試行なし・5 秒で打ち切り)。受け手は同じチャネルシークレットで署名を検証できる。https のみ。この Worker 自身の /webhook は不可。空文字または null で解除。',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: { type: 'object', properties: { url: { type: 'string', nullable: true, description: 'https:// の転送先。空文字または null で解除' } } },
+            },
+          },
+        },
+        responses: {
+          '200': { description: '{ url: string | null }' },
+          '400': { description: 'url が https でない・自分自身の /webhook など' },
+          '404': { description: 'LINE account not found' },
+        },
+      },
+    },
     // ── Conversions ─────────────────────────────────────────────────────────
     '/api/conversions/points': {
       get: { tags: ['Conversions'], summary: 'CV ポイント一覧', responses: { '200': { description: 'All conversion points' } } },

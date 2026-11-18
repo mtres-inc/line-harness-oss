@@ -30,6 +30,7 @@ import { replyViaHarnessProxy } from '../services/line-proxy-send.js';
 import type { HarnessProxyDispatch } from '../services/line-proxy-send.js';
 import { dispatchLineProxyLocally } from '../services/local-line-proxy.js';
 import { ensureSchedulerArmed } from '../durable-objects/tenant-scheduler.js';
+import { forwardVerifiedWebhook } from '../services/webhook-forward.js';
 
 const webhook = new Hono<Env>();
 
@@ -288,6 +289,10 @@ webhook.post('/webhook', async (c) => {
   })();
 
   c.executionCtx.waitUntil(processingPromise);
+
+  // Raw forwarding to the account's configured receiver (services/webhook-forward.ts):
+  // the verified bytes and LINE's own signature, once, after the 200 reply.
+  c.executionCtx.waitUntil(forwardVerifiedWebhook(db, matchedAccountId, rawBody, signature));
 
   // 定期ジョブ用 DO の自己修復チェック。何らかの理由で alarm チェーンが
   // 切れていても、次に届いた webhook がここで直す。getAlarm() 1回で済む
